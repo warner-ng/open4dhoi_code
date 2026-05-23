@@ -71,9 +71,13 @@ class IVDPredictor:
 
     def _get_default_checkpoint(self) -> str:
         """Get the default checkpoint path."""
-        default_path = INTERPOINT_PATH / "checkpoints" / "4dhoi_contrastive_from_scratch" / "epoch_078.pth"
-        if default_path.exists():
-            return str(default_path)
+        default_candidates = [
+            INTERPOINT_PATH / "checkpoints" / "epoch_078.pth",
+            INTERPOINT_PATH / "checkpoints" / "4dhoi_contrastive_from_scratch" / "epoch_078.pth",
+        ]
+        for default_path in default_candidates:
+            if default_path.exists():
+                return str(default_path)
         # Fallback options
         fallback_paths = [
             INTERPOINT_PATH / "checkpoints" / "4dhoi_only" / "epoch_80.pth",
@@ -84,7 +88,7 @@ class IVDPredictor:
                 return str(fallback_path)
         raise FileNotFoundError(
             f"No checkpoint found. Please specify checkpoint_path. "
-            f"Checked: {default_path}, {fallback_paths}"
+            f"Checked: {default_candidates + fallback_paths}"
         )
 
     def _load_joint_names(self) -> List[str]:

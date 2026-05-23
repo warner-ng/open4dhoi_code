@@ -14,9 +14,19 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from math import exp
 import numpy as np
-from sdf import *
+try:
+    from sdf import *
+    _SDF_AVAILABLE = True
+except Exception as _sdf_import_error:
+    _SDF_AVAILABLE = False
+    _SDF_IMPORT_ERROR = _sdf_import_error
 import torch.nn as nn
-import neural_renderer as nr
+try:
+    import neural_renderer as nr
+    _NR_AVAILABLE = True
+except Exception as _nr_import_error:
+    _NR_AVAILABLE = False
+    _NR_IMPORT_ERROR = _nr_import_error
 import torchvision.transforms.functional as TF
 from pytorch3d.ops import knn_points
 from PIL import Image
@@ -168,6 +178,8 @@ class HOCollisionLoss(nn.Module):
 
     def __init__(self, smpl_faces, grid_size=32, robustifier=None,):
         super().__init__()
+        if not _SDF_AVAILABLE:
+            raise ImportError(f"sdf extension is unavailable: {_SDF_IMPORT_ERROR}")
         self.sdf = SDF()
         self.register_buffer('faces', torch.tensor(smpl_faces.astype(np.int32)))
         self.grid_size = grid_size
@@ -258,6 +270,11 @@ def compute_contact_loss(corresponding_points):
     return weighted_loss
 
 def compute_collision_loss(hverts, overts, hfaces, ofaces, h_weight=10.0, threshold=None):  
+    if not _SDF_AVAILABLE:
+        # Fallback: disable collision term when sdf CUDA extension is unavailable.
+        # Keep optimization running with contact/mask losses.
+        return torch.tensor(0.0, device=hverts.device)
+
     hfaces = np.ascontiguousarray(hfaces, dtype=np.int64)
     ofaces = np.ascontiguousarray(ofaces, dtype=np.int64)
     
@@ -286,6 +303,9 @@ def compute_collision_loss(hverts, overts, hfaces, ofaces, h_weight=10.0, thresh
 
 
 def compute_mask_loss(width, height, video_dir, hverts, overts, hfaces, ofaces, mask_weight=1.5, edge_weight=1e-3, frame_idx=None):
+    if not _NR_AVAILABLE:
+        return torch.tensor(0.0, device=hverts.device)
+
     downsample_height = height // 4
     downsample_width = width // 4
     downsample_image_size = (downsample_height, downsample_width)
@@ -300,7 +320,15 @@ def compute_mask_loss(width, height, video_dir, hverts, overts, hfaces, ofaces, 
     i = frame_idx 
 
     render_size = max(downsample_height, downsample_width)  # Use max to be safe
-    renderer = nr.renderer.Renderer(
+    renderer_cls = None
+    if hasattr(nr, "renderer") and hasattr(nr.renderer, "Renderer"):
+        renderer_cls = nr.renderer.Renderer
+    elif hasattr(nr, "Renderer"):
+        renderer_cls = nr.Renderer
+    else:
+        return torch.tensor(0.0, device=hverts.device)
+
+    renderer = renderer_cls(
         image_size=render_size,
         K=K_nf.unsqueeze(0),
         R=R,

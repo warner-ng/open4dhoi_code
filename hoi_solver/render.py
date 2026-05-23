@@ -14,6 +14,21 @@ import trimesh
 from video_optimizer.utils.parameter_transform import compute_combined_transform, apply_transform_to_smpl_params
 
 
+def _default_smpl_model_path() -> str:
+    env_path = os.environ.get("SMPLX_MODEL")
+    if env_path and os.path.exists(env_path):
+        return env_path
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(script_dir)
+    shared_path = os.path.join(repo_root, "shared_data", "SMPLX_NEUTRAL.npz")
+    if os.path.exists(shared_path):
+        return shared_path
+
+    # Fallback to legacy relative path for compatibility.
+    return 'video_optimizer/smpl_models/SMPLX_NEUTRAL.npz'
+
+
 def _extract_yyyymmdd_hhmmss(filepath: str):
     """Extract datetime key from filenames like *_YYYYMMDD_HHMMSS.json.
 
@@ -56,7 +71,7 @@ def main():
     parser.add_argument('--save_transformed_params', action='store_true', help='save cam->global transformed params JSON (human/object) in transformed_parameters_final.json style')
     parser.add_argument('--transformed_out', default=None, help='output path for transformed parameters json; default: <data_dir>/final_optimized_parameters/transformed_parameters_final.json')
     parser.add_argument('--ground_align', choices=['miny', 'none'], default='none', help='how to align scene with y=0 ground plane (default: none)')
-    parser.add_argument('--smpl_model', default='video_optimizer/smpl_models/SMPLX_NEUTRAL.npz')
+    parser.add_argument('--smpl_model', default=_default_smpl_model_path())
     parser.add_argument('--width', type=int, default=1024)
     parser.add_argument('--height', type=int, default=1024)
     parser.add_argument('--fps', type=int, default=30)
@@ -396,8 +411,9 @@ def main():
                 writer.append_data(img)
         finally:
             writer.close()
-    except ModuleNotFoundError:
-        # Fallback: write video using OpenCV if imageio is not available.
+    except Exception as e:
+        # Fallback: write video using OpenCV if imageio/ffmpeg plugin is unavailable.
+        print(f"[render] imageio ffmpeg unavailable ({e}); fallback to OpenCV writer.")
         import importlib
         cv2 = importlib.import_module('cv2')
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')

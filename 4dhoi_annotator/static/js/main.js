@@ -219,7 +219,7 @@ $(document).ready(function() {
         loadHoiTasks();
     });
 
-    // Optimization Button Handler (optimize only up to current frame)
+    // Optimization Button Handler (optimize from start frame to end of sequence)
     $('#btn-optimize').click(function() {
         const btn = $(this);
         if (btn.data('running')) {
@@ -250,14 +250,17 @@ $(document).ready(function() {
             saveReq
                 .done(function() {
                     try {
-                        // 2. Run optimization limited to current frame
+                        // 2. Run optimization to the end of sequence by default
+                        const safeLastFrame = (typeof totalFrames !== 'undefined' && Number.isFinite(totalFrames) && totalFrames > 0)
+                            ? (totalFrames - 1)
+                            : currentFrame;
                         const optReq = $.ajax({
                             url: 'api/run_optimization',
                             type: 'POST',
                             contentType: 'application/json',
                             data: JSON.stringify({
                                 frame_idx: currentFrame,
-                                last_frame: currentFrame
+                                last_frame: safeLastFrame
                             })
                         });
 
@@ -2629,13 +2632,17 @@ $(document).ready(function() {
         const isStaticObject = hasStaticCheckbox ? $('#static-object').is(':checked') : false;
 
         // Prepare payload with all in-memory annotations
+        const safeLastFrame = (safeTotalFrames !== null && safeTotalFrames > 0)
+            ? (safeTotalFrames - 1)
+            : safeCurrentFrame;
+
         const payload = {
             is_static_object: !!isStaticObject,
             joint_keyframes: safeJointKeyframes,
             visibility_keyframes: safeVisibilityKeyframes,
             tracks: safeTracks,
             total_frames: safeTotalFrames,
-            last_frame: safeCurrentFrame, // Optional: limit saving to current frame
+            last_frame: safeLastFrame,
             update_progress: !!opts.update_progress
         };
 
@@ -2709,9 +2716,8 @@ $(document).ready(function() {
             data: JSON.stringify({
                 is_static_object: isStatic,
                 total_frames: totalFrames,
-                // Save only up to the frame the user is
-                // currently on when clicking "Save All".
-                last_frame: currentFrame,
+                // Save through the end of sequence by default.
+                last_frame: (Number.isFinite(totalFrames) && totalFrames > 0) ? (totalFrames - 1) : currentFrame,
                 // Per-object 3D joint keyframes over time
                 joint_keyframes: jointKeyframesByObj,
                 // Per-object visibility keyframes over time

@@ -153,12 +153,25 @@ def _select_index_from_select_id(video_dir: str, t_len: int) -> int:
 
 def _default_j_regressor_path() -> str:
     """Get default J_regressor path."""
-    p = PROJECT_DIR / "J_regressor.pt"
-    if p.exists():
-        return str(p)
-    p = PROJECT_DIR / "GVHMR" / "hmr4d" / "utils" / "body_model" / "smpl_neutral_J_regressor.pt"
-    if p.exists():
-        return str(p)
+    candidates = []
+
+    # Prefer explicit GVHMR_ROOT from preprocessing/config.sh
+    gvhmr_root = os.environ.get("GVHMR_ROOT")
+    if gvhmr_root:
+        candidates.append(Path(gvhmr_root) / "hmr4d" / "utils" / "body_model" / "smpl_neutral_J_regressor.pt")
+
+    # Common project locations
+    project_root = _SCRIPT_DIR.parent.parent  # .../open4dhoi_code
+    candidates.extend([
+        _SCRIPT_DIR / "J_regressor.pt",
+        project_root / "preprocessing" / "J_regressor.pt",
+        project_root / "preprocessing" / "third_party" / "GVHMR" / "hmr4d" / "utils" / "body_model" / "smpl_neutral_J_regressor.pt",
+        project_root / "GVHMR" / "hmr4d" / "utils" / "body_model" / "smpl_neutral_J_regressor.pt",
+    ])
+
+    for p in candidates:
+        if p.exists():
+            return str(p)
     return ""
 
 
@@ -551,8 +564,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     j_regressor_path = args.j_regressor_path or _default_j_regressor_path()
-    if not j_regressor_path or not os.path.exists(j_regressor_path):
+    if args.render and (not j_regressor_path or not os.path.exists(j_regressor_path)):
         print(f"[错误] J_regressor 未找到: {j_regressor_path}", file=sys.stderr)
+        print("[提示] 当前仅在 --render 模式需要 J_regressor。", file=sys.stderr)
         sys.exit(1)
 
     # 互斥检查

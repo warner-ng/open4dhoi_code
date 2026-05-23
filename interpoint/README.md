@@ -71,8 +71,12 @@ Download the released InterPoint checkpoint from Hugging Face and place it under
 | `4dhoi_contrastive_from_scratch/epoch_078.pth` | Trained on the Open4DHOI release | [Hugging Face](https://huggingface.co/datasets/acane2/Open4DHOI/blob/main/checkpoints/4dhoi_contrastive_from_scratch/epoch_078.pth) |
 
 ```bash
-mkdir -p checkpoints/4dhoi_contrastive_from_scratch
-# Download and place: checkpoints/4dhoi_contrastive_from_scratch/epoch_078.pth
+mkdir -p checkpoints
+# Recommended placement (used by current annotator config):
+# checkpoints/epoch_078.pth
+
+# Optional backward-compatible placement:
+# checkpoints/4dhoi_contrastive_from_scratch/epoch_078.pth
 ```
 
 ### Inference
@@ -95,6 +99,12 @@ from ivd_predictor import IVDPredictor
 predictor = IVDPredictor(checkpoint_path="checkpoints/4dhoi_contrastive_from_scratch/epoch_078.pth")
 predictions = predictor.predict(rgb_frame, object_vertices, threshold=0.3)
 # Returns: [{'joint': 'left_hand', 'xyz': [x,y,z], 'confidence': 0.85}, ...]
+```
+
+You can also use:
+
+```python
+predictor = IVDPredictor(checkpoint_path="checkpoints/epoch_078.pth")
 ```
 
 ## Configuration

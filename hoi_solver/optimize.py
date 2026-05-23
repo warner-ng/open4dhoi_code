@@ -14,7 +14,6 @@ import argparse
 import fcntl
 import json
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='2'
 import signal
 import sys
 import time

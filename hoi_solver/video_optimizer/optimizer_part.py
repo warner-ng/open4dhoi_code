@@ -44,7 +44,46 @@ from .utils.smoothing_utils import (
 )
 from .kp_common import resource_path
 
-J_regressor = torch.load(resource_path("video_optimizer/J_regressor.pt")).float().cuda()
+_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _load_j_regressor() -> torch.Tensor:
+    candidates = [
+        resource_path("video_optimizer/J_regressor.pt"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "shared_data", "J_regressor.pt"),
+    ]
+
+    for p in candidates:
+        if os.path.exists(p):
+            return torch.load(p, map_location="cpu", weights_only=False).float().to(_DEVICE)
+
+    # Fallback: derive from SMPLX_NEUTRAL.npz
+    smplx_npz_candidates = [
+        os.environ.get("SMPLX_MODEL", ""),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "shared_data", "SMPLX_NEUTRAL.npz"),
+    ]
+    for p in smplx_npz_candidates:
+        if p and os.path.exists(p):
+            smplx_data = np.load(p, allow_pickle=True)
+            J = smplx_data["J_regressor"]
+            try:
+                import scipy.sparse
+                if scipy.sparse.issparse(J):
+                    J = J.toarray()
+            except Exception:
+                pass
+            J = np.asarray(J)
+            if J.ndim == 2 and J.shape[0] >= 22:
+                J = J[:22, :]
+            return torch.from_numpy(J).float().to(_DEVICE)
+
+    raise FileNotFoundError(
+        "J_regressor not found. Tried video_optimizer/J_regressor.pt and shared_data/J_regressor.pt, "
+        "and could not derive from SMPLX_NEUTRAL.npz."
+    )
+
+
+J_regressor = _load_j_regressor()
 with open(resource_path("video_optimizer/data/joint_sim.json"), "r", encoding="utf-8") as _f:
     joint_sim = json.load(_f)
 
@@ -58,8 +97,14 @@ def load_downsampling_mapping(filepath):
     return D, faces_ds
 
 downsampling_file_path = resource_path("video_optimizer/smplx_downsampling_1000.npz")
-D, faces_ds = load_downsampling_mapping(downsampling_file_path)
-D_torch = torch.tensor(D.toarray(), dtype=torch.float32, device="cuda")
+if os.path.exists(downsampling_file_path):
+    D, faces_ds = load_downsampling_mapping(downsampling_file_path)
+    D_torch = torch.tensor(D.toarray(), dtype=torch.float32, device=_DEVICE)
+else:
+    D = None
+    faces_ds = None
+    D_torch = None
+    print(f"[WARN] Downsampling mapping not found: {downsampling_file_path}. Using full SMPL-X mesh.")
 class VideoBodyObjectOptimizer:  
     def __init__(self,   
                  body_params,
@@ -210,12 +255,12 @@ class VideoBodyObjectOptimizer:
                                 transl=transl)
                                                         
         xyz = output.vertices[0]
-        if sampled:
+        if sampled and D_torch is not None:
             xyz = torch.einsum('vw,wc->vc', D_torch, xyz)
         return xyz
     def get_body_faces(self, sampled=False):  
         body_faces = self.smpl_model.faces  
-        if sampled:
+        if sampled and faces_ds is not None:
             body_faces = faces_ds
         return body_faces  
     

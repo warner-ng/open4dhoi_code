@@ -26,6 +26,12 @@ set +u
 conda activate "${ENV_MHR}"
 set -u
 
+# Ensure conda runtime libraries are preferred over system libs.
+# This avoids GLIBCXX mismatch errors (e.g. optree requiring GLIBCXX_3.4.31).
+if [ -n "${CONDA_PREFIX:-}" ] && [ -d "${CONDA_PREFIX}/lib" ]; then
+    export LD_LIBRARY_PATH="${CONDA_PREFIX}/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+
 echo ""
 echo "[1/1] Refining hand pose..."
 if [ -f "${VIDEO_DIR}/motion/result_hand.pt" ]; then

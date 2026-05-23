@@ -23,7 +23,14 @@
 # ==============================================================================
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HOI_SOLVER_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Optional: load shared preprocessing config for env names
+PIPELINE_CONFIG="${HOI_SOLVER_DIR}/../preprocessing/config.sh"
+if [ -f "${PIPELINE_CONFIG}" ]; then
+    # shellcheck disable=SC1090
+    source "${PIPELINE_CONFIG}"
+fi
 
 # Parse arguments
 DATA_DIR=""
@@ -68,17 +75,27 @@ fi
 DATA_DIR="$(cd "$DATA_DIR" && pwd)"
 export CUDA_VISIBLE_DEVICES="$GPU"
 
+# Activate runtime environment (default: 4dhoi_pipeline)
+RUNTIME_ENV="${ENV_PIPELINE:-4dhoi_pipeline}"
+if command -v conda >/dev/null 2>&1; then
+    eval "$(conda shell.bash hook)"
+    set +u
+    conda activate "${RUNTIME_ENV}"
+    set -u
+fi
+
 echo "============================================"
 echo "  4DHOI Solver"
 echo "  Session: ${DATA_DIR}"
 echo "  GPU: ${GPU}"
+echo "  Env: ${RUNTIME_ENV}"
 echo "============================================"
 
 # Run optimization (annotation conversion is built-in)
 echo ""
 echo "Running HOI optimization..."
 echo "(Annotations will be auto-converted from decimated to original mesh if needed)"
-python "${SCRIPT_DIR}/optimize.py" \
+python "${HOI_SOLVER_DIR}/optimize.py" \
     --data_dir "${DATA_DIR}" \
     "${OPT_ARGS[@]}"
 
@@ -86,7 +103,7 @@ python "${SCRIPT_DIR}/optimize.py" \
 if [ "$RENDER" = true ]; then
     echo ""
     echo "Generating visualization..."
-    python "${SCRIPT_DIR}/render.py" \
+    python "${HOI_SOLVER_DIR}/render.py" \
         --data_dir "${DATA_DIR}" \
         --save_transformed_params \
         "${RENDER_ARGS[@]}"

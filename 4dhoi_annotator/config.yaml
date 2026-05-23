@@ -18,6 +18,7 @@ server:
   port: 5027
 
 # Video defaults (used when metadata is missing)
+
 video:
   default_fps: 30
 
@@ -26,7 +27,7 @@ video:
 ivd_model:
   enabled: true
   # Model checkpoint path (leave empty for default)
-  checkpoint: ""
+  checkpoint: "/home/warner/_projects/open4dhoi_code/interpoint/checkpoints/epoch_078.pth"
   # Device: "cuda" or "cpu"
   device: "cuda"
   # Prediction confidence threshold
