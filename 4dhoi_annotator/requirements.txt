@@ -5,6 +5,9 @@ open3d>=0.15
 numpy>=1.21
 PyYAML>=5.4
 scipy>=1.7
+trimesh>=4.0
+plyfile>=1.0
+probreg>=0.3
 
 # Deep Learning
 torch>=1.12

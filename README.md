@@ -92,6 +92,17 @@ python data_preparer/app.py --data_dir data --port 5020
 
 ```bash
 bash preprocessing/run_pipeline.sh data/category/session_name
+
+
+bash preprocessing/run_pipeline.sh data/bike/20260521_160347_7d09cae4 --retarget --smooth 0.3 --render
+
+export CUDA_VISIBLE_DEVICES=0
+export CUDA_MASKS=0
+export CUDA_OBJ_ORG=0
+export HF_HUB_OFFLINE=1
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+
+bash preprocessing/run_pipeline.sh data/bike/20260521_160347_7d09cae4 --retarget --smooth 0.3
 ```
 
 This runs 7 steps across 3 conda environments:

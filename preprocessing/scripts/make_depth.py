@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='2'
+# Respect launcher-provided GPU assignment (e.g., CUDA_VISIBLE_DEVICES from step script).
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '0')
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["TRANSFORMERS_OFFLINE"] = "1"
 

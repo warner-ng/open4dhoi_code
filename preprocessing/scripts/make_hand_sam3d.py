@@ -6,7 +6,7 @@
 """
 import sys
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='3'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 import json
 import argparse
 from pathlib import Path

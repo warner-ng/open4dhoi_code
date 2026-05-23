@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='1'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 import sys
 import json
 import argparse
@@ -280,8 +280,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     tag = "hf-download"
-    config_path = f"/inspire/ssd/project/robot-reasoning/xiangyushun-p-xiangyushun/jiaxin/ckpts/checkpoints/{tag}/checkpoints/pipeline.yaml"
-
+    config_path = "/home/warner/_projects/open4dhoi_code/preprocessing/third_party/sam-3d-objects/checkpoints/hf/pipeline.yaml"
     # 互斥检查
     if args.daemon and args.video_dir:
         print("错误: --daemon 和 --video_dir 不能同时使用")

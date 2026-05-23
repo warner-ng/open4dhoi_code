@@ -1,0 +1,19 @@
+============================================
+Step 1: Frames + Masks + Object Mesh
+Session: /home/warner/_projects/open4dhoi_code/data/bike/20260521_160347_7d09cae4
+Conda env: sam3d_obj_4d
+============================================
+
+[1/3] Extracting frames...
+  Frames already exist, skipping.
+
+[2/3] Generating masks (SAM2)...
+  Masks already exist, skipping.
+
+[3/3] Reconstructing object mesh (SAM-3D-Objects)...
+Traceback (most recent call last):
+  File "/home/warner/_projects/open4dhoi_code/preprocessing/scripts/make_obj_org.py", line 49, in <module>
+    from inference import Inference, load_image, load_single_mask
+  File "/home/warner/_projects/open4dhoi_code/preprocessing/third_party/sam-3d-objects/notebook/inference.py", line 19, in <module>
+    import seaborn as sns
+ModuleNotFoundError: No module named 'seaborn'

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-os.environ['CUDA_VISIBLE_DEVICES']='2'
+# Respect launcher-provided GPU assignment (e.g., CUDA_VISIBLE_DEVICES from step script).
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '0')
 import os.path
 import sys
 import json
